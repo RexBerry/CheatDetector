@@ -5,6 +5,8 @@ namespace CheatingDetector;
 internal class Program
 {
     public const int SIZE_THRESHOLD = 50;
+    public const double SUSPICIOUS_SIMILARITY_THRESHOLD = 0.35;
+    public const double SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD = 1.4;
 
     private static void Main(string[] args)
     {
@@ -16,11 +18,14 @@ internal class Program
             return;
         }
 
+        string assignmentDir = args[0];
+        string assignmentName = new DirectoryInfo(assignmentDir).Name;
+
         List<SubmissionData> submissions = new();
         List<SubmissionData> invalidSubmissions = new();
         foreach (
             Submission submission
-            in AssignmentSubmissions.GetSubmissions(args[0])
+            in AssignmentSubmissions.GetSubmissions(assignmentDir)
         )
         {
             SubmissionData submissionData = new(submission);
@@ -154,6 +159,13 @@ internal class Program
             Path.Join(args[0], "submission_pairs.csv"),
             submissionPairs
         );
+
+        PrintSummary(
+            assignmentName,
+            submissions,
+            invalidSubmissions,
+            submissionPairs
+        );
     }
 
     private static void SaveSubmissionData(
@@ -199,14 +211,127 @@ internal class Program
 
         foreach (SubmissionPair submissionPair in submissionPairs)
         {
-            string username1 = submissionPair.Name1;
-            string username2 = submissionPair.Name2;
+            string username1 = submissionPair.Username1;
+            string username2 = submissionPair.Username2;
             double similarity = submissionPair.Similarity;
             writer.WriteLine($"{username1},{username2},{similarity}");
         }
     }
+
+    private static void PrintSummary(
+        string assignmentName,
+        IList<SubmissionData> submissions,
+        IList<SubmissionData> invalidSubmissions,
+        IList<SubmissionPair> submissionPairs
+    )
+    {
+        Console.WriteLine($"Summary for {assignmentName}");
+        Console.WriteLine();
+
+        int totalSubmissionCount
+            = submissions.Count + invalidSubmissions.Count;
+        Console.WriteLine($"Total Submissions: {totalSubmissionCount}");
+        Console.WriteLine($"Analyzed Submissions: {submissions.Count}");
+        Console.WriteLine(
+            $"Unanalyzed Submissions: {invalidSubmissions.Count}"
+        );
+
+        if (invalidSubmissions.Count > 0)
+        {
+            Console.WriteLine(
+                "  The following submissions were too short to analyze"
+            );
+            Console.Write("  or unable to be decoded:");
+
+            int lineLength = 0;
+            foreach (SubmissionData submissionData in invalidSubmissions)
+            {
+                string username
+                    = PadUsername(submissionData.Submission.Username);
+
+                if (lineLength == 0)
+                {
+                    Console.WriteLine();
+                    Console.Write($"    {username}");
+                }
+                else
+                {
+                    Console.Write($" {username}");
+                }
+
+                ++lineLength;
+                if (lineLength == 10)
+                {
+                    lineLength = 0;
+                }
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+
+        int countMatching;
+
+        Console.WriteLine(
+            $"Suspicious Submission Pairs (Similarity > {SUSPICIOUS_SIMILARITY_THRESHOLD})"
+        );
+        countMatching = 0;
+        foreach (SubmissionPair submissionPair in submissionPairs)
+        {
+            double similarity = submissionPair.Similarity;
+            if (similarity <= SUSPICIOUS_SIMILARITY_THRESHOLD)
+            {
+                continue;
+            }
+
+            ++countMatching;
+
+            string username1 = PadUsername(submissionPair.Username1);
+            string username2 = PadUsername(submissionPair.Username2);
+            Console.WriteLine(
+                $"  ( {username1} {username2} ) : {similarity.ToString("F4")}"
+            );
+        }
+
+        if (countMatching == 0)
+        {
+            Console.WriteLine("  None Found");
+        }
+
+        Console.WriteLine();
+
+        Console.WriteLine(
+            $"Suspicious Submissions (Compression Ratio < {SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD})"
+        );
+        countMatching = 0;
+        foreach (SubmissionData submissionData in submissions)
+        {
+            double compressionRatio = submissionData.CompressionRatio;
+            if (compressionRatio >= SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD)
+            {
+                continue;
+            }
+
+            ++countMatching;
+
+            string username = PadUsername(submissionData.Submission.Username);
+            Console.WriteLine(
+                $"  {username} : {compressionRatio.ToString("F4")}"
+            );
+        }
+
+        if (countMatching == 0)
+        {
+            Console.WriteLine("  None Found");
+        }
+
+        Console.WriteLine();
+    }
+
+    private static string PadUsername(string username)
+        => username.PadLeft(6, ' ');
 }
 
 public record struct SubmissionPair(
-    string Name1, string Name2, double Similarity
+    string Username1, string Username2, double Similarity
 );
