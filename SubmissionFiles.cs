@@ -4,10 +4,7 @@ namespace CheatingDetector;
 
 public static class SubmissionFiles
 {
-    public static IReadOnlySet<string> SourceFileExtensions
-        => _sourceFileExtensions;
-    private static readonly IReadOnlySet<string> _sourceFileExtensions
-        = new[]{ ".cpp", ".c", ".hpp", ".h", ".txt" }.ToImmutableHashSet();
+    public static ISet<string> SourceFileExtensions = new HashSet<string>();
 
     public static bool IsSourceFile(string filename)
         => SourceFileExtensions.Contains(

@@ -1,25 +1,35 @@
-﻿using System.Threading;
-
-namespace CheatingDetector;
+﻿namespace CheatingDetector;
 
 internal class Program
 {
     public const int SIZE_THRESHOLD = 50;
-    public const double SUSPICIOUS_SIMILARITY_THRESHOLD = 0.35;
-    public const double SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD = 1.4;
+    public const int SUBMISSION_PAIRS_TO_DISPLAY = 15;
+    public const int SUBMISSIONS_TO_DISPLAY = 10;
 
     private static void Main(string[] args)
     {
         if (args.Length < 1)
         {
             Console.WriteLine(
-                "Please provide a directory containing the submission repos."
+                "Usage: CheatingDetector [directory] [file extensions]"
             );
+            Console.WriteLine(
+                "- [directory]: a directory whose subdirectories are the submission Git repos"
+            );
+            Console.WriteLine(
+                "- [file extensions]: a list of file extensions to analyze. Example: .cpp .c .hpp .h"
+            );
+
             return;
         }
 
         string assignmentDir = args[0];
         string assignmentName = new DirectoryInfo(assignmentDir).Name;
+
+        foreach (string fileExtension in args.Skip(1))
+        {
+            SubmissionFiles.SourceFileExtensions.Add(fileExtension);
+        }
 
         List<SubmissionData> submissions = new();
         List<SubmissionData> invalidSubmissions = new();
@@ -270,61 +280,37 @@ internal class Program
 
         Console.WriteLine();
 
-        int countMatching;
-
         Console.WriteLine(
-            $"Suspicious Submission Pairs (Similarity > {SUSPICIOUS_SIMILARITY_THRESHOLD})"
+            $"Submission Pairs by Highest Similarity"
         );
-        countMatching = 0;
-        foreach (SubmissionPair submissionPair in submissionPairs)
+        foreach (
+            SubmissionPair submissionPair
+            in submissionPairs.Take(SUBMISSION_PAIRS_TO_DISPLAY)
+        )
         {
-            double similarity = submissionPair.Similarity;
-            if (similarity <= SUSPICIOUS_SIMILARITY_THRESHOLD)
-            {
-                continue;
-            }
-
-            ++countMatching;
-
             string username1 = PadUsername(submissionPair.Username1);
             string username2 = PadUsername(submissionPair.Username2);
+            double similarity = submissionPair.Similarity;
             Console.WriteLine(
                 $"  ( {username1} {username2} ) : {similarity.ToString("F4")}"
             );
         }
-
-        if (countMatching == 0)
-        {
-            Console.WriteLine("  None Found");
-        }
-
         Console.WriteLine();
 
         Console.WriteLine(
-            $"Suspicious Submissions (Compression Ratio < {SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD})"
+            $"Submissions by Lowest Compression Ratio"
         );
-        countMatching = 0;
-        foreach (SubmissionData submissionData in submissions)
+        foreach (
+            SubmissionData submissionData
+            in submissions.Take(SUBMISSIONS_TO_DISPLAY)
+        )
         {
-            double compressionRatio = submissionData.CompressionRatio;
-            if (compressionRatio >= SUSPICIOUS_COMPRESSION_RATIO_THRESHOLD)
-            {
-                continue;
-            }
-
-            ++countMatching;
-
             string username = PadUsername(submissionData.Submission.Username);
+            double compressionRatio = submissionData.CompressionRatio;
             Console.WriteLine(
                 $"  {username} : {compressionRatio.ToString("F4")}"
             );
         }
-
-        if (countMatching == 0)
-        {
-            Console.WriteLine("  None Found");
-        }
-
         Console.WriteLine();
     }
 
