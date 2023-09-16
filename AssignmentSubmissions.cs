@@ -23,7 +23,16 @@ public static class AssignmentSubmissions
             {
                 using StreamReader reader = new(filename, true);
                 string fileText = reader.ReadToEnd();
-                string minified = minifier.Minify(fileText);
+                string minified;
+                try
+                {
+                    minified = minifier.Minify(fileText);
+                }
+                catch (ArgumentException)
+                {
+                    // fileText doesn't contain valid Unicode
+                    minified = string.Empty;
+                }
 
                 minifiedSourceCode.Append(minified);
                 minifiedSourceCode.Append('\n');

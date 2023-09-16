@@ -12,7 +12,7 @@ public class CppMinifier
         // This does not attempt to detect strings or comments
 
         src = src
-            .Normalize(NormalizationForm.FormC)
+            .Normalize(NormalizationForm.FormKC)
             .ReplaceLineEndings();
 
         List<int> codepoints = new();

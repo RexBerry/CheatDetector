@@ -77,35 +77,46 @@ internal class Program
             taskResults[i] = new();
         }
 
+        const int CHUNK_SIZE = 16;
+        int chunkIdx = -CHUNK_SIZE;
         for (int i = 0; i < taskCount; ++i)
         {
             int taskIdx = i;
             tasks[taskIdx] = new Task(()
             => {
-                int begin = taskIdx * pairIndexes.Count / taskCount;
-                int end = (taskIdx + 1) * pairIndexes.Count / taskCount;
-                var result = taskResults[taskIdx];
-
-                for (int i = begin; i < end; ++i)
+                List<SubmissionPair> result = taskResults[taskIdx];
+                while (true)
                 {
-                    (int i, int j) pair = pairIndexes[i];
-                    SubmissionData submissionData1 = submissions[pair.i];
-                    SubmissionData submissionData2 = submissions[pair.j];
-                    double similarity
-                        = similarityCalculator.CalculateSimilarity(
-                            submissionData1.Submission.MinifiedSourceCode,
-                            submissionData2.Submission.MinifiedSourceCode,
-                            submissionData1.CompressedSize,
-                            submissionData2.CompressedSize
-                        );
+                    int begin
+                        = Interlocked.Add(ref chunkIdx, CHUNK_SIZE);
+                    if (begin >= pairIndexes.Count)
+                    {
+                        break;
+                    }
 
-                    result.Add(
-                        new(
-                            submissionData1.Submission.Username,
-                            submissionData2.Submission.Username,
-                            similarity
-                        )
-                    );
+                    int end = Math.Min(begin + CHUNK_SIZE, pairIndexes.Count);
+
+                    for (int i = begin; i < end; ++i)
+                    {
+                        (int i, int j) pair = pairIndexes[i];
+                        SubmissionData submissionData1 = submissions[pair.i];
+                        SubmissionData submissionData2 = submissions[pair.j];
+                        double similarity
+                            = similarityCalculator.CalculateSimilarity(
+                                submissionData1.Submission.MinifiedSourceCode,
+                                submissionData2.Submission.MinifiedSourceCode,
+                                submissionData1.CompressedSize,
+                                submissionData2.CompressedSize
+                            );
+
+                        result.Add(
+                            new(
+                                submissionData1.Submission.Username,
+                                submissionData2.Submission.Username,
+                                similarity
+                            )
+                        );
+                    }
                 }
             });
             tasks[taskIdx].Start();
