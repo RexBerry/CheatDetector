@@ -65,7 +65,8 @@ internal class Program
         for (int i = 0; i < taskCount; ++i)
         {
             int taskIdx = i;
-            tasks[taskIdx] = new Task(() => {
+            tasks[taskIdx] = new Task(()
+            => {
                 int begin = taskIdx * pairIndexes.Count / taskCount;
                 int end = (taskIdx + 1) * pairIndexes.Count / taskCount;
                 var result = taskResults[taskIdx];
@@ -108,7 +109,8 @@ internal class Program
 
         // Reverse sort by similarity
         submissionPairs.Sort(
-            (SubmissionPair lhs, SubmissionPair rhs) => {
+            (SubmissionPair lhs, SubmissionPair rhs)
+            => {
                 if (lhs.Similarity < rhs.Similarity)
                 {
                     return 1;
@@ -126,7 +128,8 @@ internal class Program
 
         // Sort by compression ratio
         submissions.Sort(
-            (SubmissionData lhs, SubmissionData rhs) => {
+            (SubmissionData lhs, SubmissionData rhs)
+            => {
                 if (lhs.CompressionRatio < rhs.CompressionRatio)
                 {
                     return -1;
@@ -142,51 +145,64 @@ internal class Program
             }
         );
 
-        using (
-            StreamWriter writer = new(
-                Path.Join(args[0], "submission_pairs.csv")
-            )
-        )
-        {
-            writer.WriteLine("Username 1,Username 2,Similarity");
+        SaveSubmissionData(
+            Path.Join(args[0], "submissions.csv"),
+            submissions,
+            invalidSubmissions
+        );
+        SaveSubmissionPairData(
+            Path.Join(args[0], "submission_pairs.csv"),
+            submissionPairs
+        );
+    }
 
-            foreach (SubmissionPair submissionPair in submissionPairs)
-            {
-                string username1 = submissionPair.Name1;
-                string username2 = submissionPair.Name2;
-                double similarity = submissionPair.Similarity;
-                writer.WriteLine($"{username1},{username2},{similarity}");
-            }
+    private static void SaveSubmissionData(
+        string filename,
+        IEnumerable<SubmissionData> submissions,
+        IEnumerable<SubmissionData> invalidSubmissions
+    )
+    {
+        using StreamWriter writer = new(filename);
+
+        writer.WriteLine(
+            "Username,Compression Ratio,Pseudo-Minified Code Size,Compressed Size"
+        );
+
+        foreach (SubmissionData submissionData in submissions)
+        {
+            string username = submissionData.Submission.Username;
+            double compressionRatio = submissionData.CompressionRatio;
+            long minifiedSize = submissionData.UncompressedSize;
+            long compressedSize = submissionData.CompressedSize;
+            writer.WriteLine(
+                $"{username},{compressionRatio},{minifiedSize},{compressedSize}"
+            );
         }
 
-        using (
-            StreamWriter writer = new(
-                Path.Join(args[0], "submissions.csv")
-            )
-        )
+        foreach (SubmissionData invalidSubmission in invalidSubmissions)
         {
+            string username = invalidSubmission.Submission.Username;
             writer.WriteLine(
-                "Username,Compression Ratio,Pseudo-Minified Code Size,Compressed Size"
+                $"{username},---,---,---"
             );
+        }
+    }
 
-            foreach (SubmissionData submissionData in submissions)
-            {
-                string username = submissionData.Submission.Username;
-                double compressionRatio = submissionData.CompressionRatio;
-                long minifiedSize = submissionData.UncompressedSize;
-                long compressedSize = submissionData.CompressedSize;
-                writer.WriteLine(
-                    $"{username},{compressionRatio},{minifiedSize},{compressedSize}"
-                );
-            }
+    private static void SaveSubmissionPairData(
+        string filename,
+        IEnumerable<SubmissionPair> submissionPairs
+    )
+    {
+        using StreamWriter writer = new(filename);
 
-            foreach (SubmissionData invalidSubmission in invalidSubmissions)
-            {
-                string username = invalidSubmission.Submission.Username;
-                writer.WriteLine(
-                    $"{username},---,---,---"
-                );
-            }
+        writer.WriteLine("Username 1,Username 2,Similarity");
+
+        foreach (SubmissionPair submissionPair in submissionPairs)
+        {
+            string username1 = submissionPair.Name1;
+            string username2 = submissionPair.Name2;
+            double similarity = submissionPair.Similarity;
+            writer.WriteLine($"{username1},{username2},{similarity}");
         }
     }
 }
