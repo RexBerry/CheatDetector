@@ -11,4 +11,9 @@
     <PackageReference Include="EasyCompressor.LZMA" Version="1.4.0" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PublishRelease>true</PublishRelease>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
 </Project>
