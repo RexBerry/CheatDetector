@@ -46,7 +46,7 @@ public class SimilarityCalculator
         long maxLength = Math.Max(length1, length2);
 
         // This is somewhat arbitrary
-        double mult = Math.Cbrt((double)minLength / maxLength);
+        double mult = Math.Sqrt((double)minLength / maxLength);
 
         return mult * InverseLerp(
             length1 + length2, maxLength, avgCombinedLength
