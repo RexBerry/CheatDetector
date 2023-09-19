@@ -2,7 +2,7 @@
 
 internal class Program
 {
-    public const int SIZE_THRESHOLD = 50;
+    public const int SIZE_THRESHOLD = 250;
     public const int SUBMISSION_PAIRS_TO_DISPLAY = 15;
     public const int SUBMISSIONS_TO_DISPLAY = 10;
 
