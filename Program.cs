@@ -252,17 +252,17 @@ internal class Program
         int totalSubmissionCount
             = submissions.Count + invalidSubmissions.Count;
         Console.WriteLine($"Total Submissions: {totalSubmissionCount}");
-        Console.WriteLine($"Analyzed Submissions: {submissions.Count}");
+        Console.WriteLine($"Submissions Checked: {submissions.Count}");
         Console.WriteLine(
-            $"Unanalyzed Submissions: {invalidSubmissions.Count}"
+            $"Submissions Skipped: {invalidSubmissions.Count}"
         );
 
         if (invalidSubmissions.Count > 0)
         {
             Console.WriteLine(
-                "  The following submissions were too short to analyze"
+                "  The following submissions were too short to check"
             );
-            Console.Write("  or unable to be decoded:");
+            Console.Write("  for similarity or were unable to be decoded:");
 
             int lineLength = 0;
             foreach (SubmissionData submissionData in invalidSubmissions)
