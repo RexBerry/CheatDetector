@@ -31,6 +31,7 @@ public static class AssignmentSubmissions
                 catch (ArgumentException)
                 {
                     // fileText doesn't contain valid Unicode
+                    Console.WriteLine($"Warning: Unable to decode {filename}");
                     minified = string.Empty;
                 }
 

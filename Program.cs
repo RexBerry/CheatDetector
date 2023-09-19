@@ -181,6 +181,7 @@ internal class Program
             submissionPairs
         );
 
+        Console.WriteLine();
         PrintSummary(
             assignmentName,
             submissions,
