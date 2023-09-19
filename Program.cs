@@ -14,10 +14,12 @@ internal class Program
                 "Usage: CheatingDetector [directory] [file extensions]"
             );
             Console.WriteLine(
-                "- [directory]: a directory whose subdirectories are the submission Git repos"
+                "- [directory]: a directory whose subdirectories are the"
+                + " submission Git repos"
             );
             Console.WriteLine(
-                "- [file extensions]: a list of file extensions to analyze. Example: .cpp .c .hpp .h"
+                "- [file extensions]: a list of file extensions to analyze."
+                + " Example: .cpp .c .hpp .h"
             );
 
             return;
@@ -77,8 +79,12 @@ internal class Program
             taskResults[i] = new();
         }
 
-        const int CHUNK_SIZE = 16;
-        int chunkIdx = -CHUNK_SIZE;
+        const string CLEAR_LINE
+            = "\r                                                  \r";
+
+        const int CHUNK_SIZE = 4;
+        int chunkIdx = 0;
+        int itemsComplete = 0;
         for (int i = 0; i < taskCount; ++i)
         {
             int taskIdx = i;
@@ -88,10 +94,24 @@ internal class Program
                 while (true)
                 {
                     int begin
-                        = Interlocked.Add(ref chunkIdx, CHUNK_SIZE);
+                        = Interlocked.Add(ref chunkIdx, CHUNK_SIZE)
+                        - CHUNK_SIZE;
                     if (begin >= pairIndexes.Count)
                     {
                         break;
+                    }
+
+                    if (itemsComplete % (taskCount * CHUNK_SIZE) == 0)
+                    {
+                        double pctComplete
+                            = (double)itemsComplete / pairIndexes.Count * 100.0;
+                        Console.Write(
+                            CLEAR_LINE
+                            + $"Checked {itemsComplete}/{pairIndexes.Count}"
+                            + $" Submission Pairs"
+                            + $" ({pctComplete.ToString("F1")}%)"
+                        );
+                        Console.Out.Flush();
                     }
 
                     int end = Math.Min(begin + CHUNK_SIZE, pairIndexes.Count);
@@ -117,6 +137,8 @@ internal class Program
                             )
                         );
                     }
+
+                    Interlocked.Add(ref itemsComplete, end - begin);
                 }
             });
             tasks[taskIdx].Start();
@@ -126,6 +148,9 @@ internal class Program
         {
             task.Wait();
         }
+
+        Console.Write(CLEAR_LINE);
+        Console.Out.Flush();
 
         List<SubmissionPair> submissionPairs = new();
         foreach (List<SubmissionPair> taskResult in taskResults)
@@ -199,7 +224,8 @@ internal class Program
         using StreamWriter writer = new(filename);
 
         writer.WriteLine(
-            "Username,Compression Ratio,Pseudo-Minified Code Size,Compressed Size"
+            "Username,Compression Ratio,Pseudo-Minified Code Size"
+            + ",Compressed Size"
         );
 
         foreach (SubmissionData submissionData in submissions)
@@ -209,7 +235,8 @@ internal class Program
             long minifiedSize = submissionData.UncompressedSize;
             long compressedSize = submissionData.CompressedSize;
             writer.WriteLine(
-                $"{username},{compressionRatio},{minifiedSize},{compressedSize}"
+                $"{username},{compressionRatio},{minifiedSize}"
+                + $",{compressedSize}"
             );
         }
 
