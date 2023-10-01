@@ -8,18 +8,18 @@ internal class Program
 
     private static void Main(string[] args)
     {
-        if (args.Length < 1)
+        if (args.Length < 2)
         {
             Console.WriteLine(
-                "Usage: CheatingDetector [directory] [file extensions]"
+                "Usage: CheatingDetector <directory> <file extensions>"
             );
             Console.WriteLine(
-                "- [directory]: a directory whose subdirectories are the"
+                "- <directory>: a directory whose subdirectories are the"
                 + " submission Git repos"
             );
             Console.WriteLine(
-                "- [file extensions]: a list of file extensions to analyze."
-                + " Example: .cpp .c .hpp .h"
+                "- <file extensions>: a list of file extensions to analyze."
+                + " Example: .cpp .c .hpp .h \"\""
             );
 
             return;
