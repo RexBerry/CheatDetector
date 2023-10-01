@@ -200,12 +200,12 @@ internal class Program
             }
         );
 
-        // Reverse sort by highest similarity score
+        // Sort by compression ratio
         submissions.Sort(
             (SubmissionData lhs, SubmissionData rhs)
             => {
-                var lhsValue = lhs.HighestSimilarity;
-                var rhsValue = rhs.HighestSimilarity;
+                var lhsValue = lhs.CompressionRatio;
+                var rhsValue = rhs.CompressionRatio;
 
                 if (lhsValue < rhsValue)
                 {
@@ -364,7 +364,7 @@ internal class Program
         Console.WriteLine();
 
         Console.WriteLine(
-            $"Submissions by Highest Similarity to Another Submission"
+            $"Submissions by Lowest Compression Ratio"
         );
         foreach (
             SubmissionData submissionData
