@@ -58,7 +58,6 @@ internal class Program
         }
 
         SimilarityCalculator similarityCalculator = new();
-
         foreach (SubmissionData submissionData in submissions)
         {
             submissionData.CompressedData
@@ -98,6 +97,7 @@ internal class Program
             tasks[taskIdx] = new Task(()
             => {
                 List<SubmissionPair> result = taskResults[taskIdx];
+                SimilarityCalculator similarityCalculator = new();
                 while (true)
                 {
                     int begin
