@@ -15,6 +15,7 @@ public static class SubmissionFiles
     {
         Queue<string> dirs = new();
         dirs.Enqueue(directoryName);
+        bool isTop = true;
         while (dirs.Count > 0)
         {
             string dirname = dirs.Dequeue();
@@ -33,8 +34,15 @@ public static class SubmissionFiles
                 string subdirname in Directory.GetDirectories(dirname).Order()
             )
             {
+                if (isTop && subdirname == ".git")
+                {
+                    continue;
+                }
+
                 dirs.Enqueue(subdirname);
             }
+
+            isTop = false;
         }
     }
 }
