@@ -19,7 +19,7 @@ internal class Program
             );
             Console.WriteLine(
                 "- <file extensions>: a list of file extensions to analyze."
-                + " Example: .cpp .c .hpp .h \"\""
+                + " Example: .cpp .c .hpp .h"
             );
 
             return;
