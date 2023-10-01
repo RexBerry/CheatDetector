@@ -13,6 +13,7 @@ public class SubmissionData
     public long CompressedSize => CompressedData.Length;
     public double CompressionRatio
         => (double)UncompressedSize / CompressedSize;
+    public double HighestSimilarity { get; private set; } = 0.0;
 
     public SubmissionData(Submission submission)
     {
@@ -20,5 +21,13 @@ public class SubmissionData
         UncompressedData = Encoding.UTF8.GetBytes(
             Submission.MinifiedSourceCode
         );
+    }
+
+    public void AddSimilarityScore(double similarityScore)
+    {
+        if (similarityScore > HighestSimilarity)
+        {
+            HighestSimilarity = similarityScore;
+        }
     }
 }

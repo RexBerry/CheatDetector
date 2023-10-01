@@ -50,6 +50,13 @@ internal class Program
             submissions.Add(submissionData);
         }
 
+        // Don't feel good about this but whatever
+        Dictionary<string, int> usernameIndexes = new();
+        for (int i = 0; i < submissions.Count; ++i)
+        {
+            usernameIndexes[submissions[i].Submission.Username] = i;
+        }
+
         SimilarityCalculator similarityCalculator = new();
         // LevenshteinDistance levenshtein = new();
 
@@ -165,6 +172,15 @@ internal class Program
             submissionPairs.AddRange(taskResult);
         }
 
+        foreach (SubmissionPair submissionPair in submissionPairs)
+        {
+            double similarity = submissionPair.Similarity;
+            submissions[usernameIndexes[submissionPair.Username1]]
+                .AddSimilarityScore(similarity);
+            submissions[usernameIndexes[submissionPair.Username2]]
+                .AddSimilarityScore(similarity);
+        }
+
         // Reverse sort by similarity
         submissionPairs.Sort(
             (SubmissionPair lhs, SubmissionPair rhs)
@@ -184,23 +200,34 @@ internal class Program
             }
         );
 
-        // Sort by compression ratio
+        // Reverse sort by highest similarity score
         submissions.Sort(
             (SubmissionData lhs, SubmissionData rhs)
             => {
-                if (lhs.CompressionRatio < rhs.CompressionRatio)
-                {
-                    return -1;
-                }
-                else if (rhs.CompressionRatio < lhs.CompressionRatio)
+                var lhsValue = lhs.HighestSimilarity;
+                var rhsValue = rhs.HighestSimilarity;
+
+                if (lhsValue < rhsValue)
                 {
                     return 1;
+                }
+                else if (rhsValue < lhsValue)
+                {
+                    return -1;
                 }
                 else
                 {
                     return 0;
                 }
             }
+        );
+
+        Console.WriteLine();
+        PrintSummary(
+            assignmentName,
+            submissions,
+            invalidSubmissions,
+            submissionPairs
         );
 
         SaveSubmissionData(
@@ -210,14 +237,6 @@ internal class Program
         );
         SaveSubmissionPairData(
             Path.Join(args[0], "submission_pairs.csv"),
-            submissionPairs
-        );
-
-        Console.WriteLine();
-        PrintSummary(
-            assignmentName,
-            submissions,
-            invalidSubmissions,
             submissionPairs
         );
     }
@@ -231,19 +250,20 @@ internal class Program
         using StreamWriter writer = new(filename);
 
         writer.WriteLine(
-            "Username,Compression Ratio,Pseudo-Minified Code Size"
-            + ",Compressed Size"
+            "Username,Highest Similarity,Compression Ratio"
+            + ",Pseudo-Minified Code Size,Compressed Size"
         );
 
         foreach (SubmissionData submissionData in submissions)
         {
             string username = submissionData.Submission.Username;
+            double highestSimilarity = submissionData.HighestSimilarity;
             double compressionRatio = submissionData.CompressionRatio;
             long minifiedSize = submissionData.UncompressedSize;
             long compressedSize = submissionData.CompressedSize;
             writer.WriteLine(
-                $"{username},{compressionRatio},{minifiedSize}"
-                + $",{compressedSize}"
+                $"{username},{highestSimilarity},{compressionRatio}"
+                + $",{minifiedSize},{compressedSize}"
             );
         }
 
@@ -251,7 +271,7 @@ internal class Program
         {
             string username = invalidSubmission.Submission.Username;
             writer.WriteLine(
-                $"{username},---,---,---"
+                $"{username},---,---,---,---"
             );
         }
     }
@@ -344,7 +364,7 @@ internal class Program
         Console.WriteLine();
 
         Console.WriteLine(
-            $"Submissions by Lowest Compression Ratio"
+            $"Submissions by Highest Similarity to Another Submission"
         );
         foreach (
             SubmissionData submissionData
@@ -352,9 +372,9 @@ internal class Program
         )
         {
             string username = PadUsername(submissionData.Submission.Username);
-            double compressionRatio = submissionData.CompressionRatio;
+            double highestSimilarity = submissionData.HighestSimilarity;
             Console.WriteLine(
-                $"  {username} : {compressionRatio.ToString("F4")}"
+                $"  {username} : {highestSimilarity.ToString("F4")}"
             );
         }
         Console.WriteLine();
