@@ -51,6 +51,7 @@ internal class Program
         }
 
         SimilarityCalculator similarityCalculator = new();
+        // LevenshteinDistance levenshtein = new();
 
         foreach (SubmissionData submissionData in submissions)
         {
@@ -128,6 +129,12 @@ internal class Program
                                 submissionData1.CompressedSize,
                                 submissionData2.CompressedSize
                             );
+                        /*
+                            = levenshtein.CalculateSimilarity(
+                                submissionData1.Submission.MinifiedSourceCode,
+                                submissionData2.Submission.MinifiedSourceCode
+                            );
+                        */
 
                         result.Add(
                             new(
