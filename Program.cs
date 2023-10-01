@@ -372,9 +372,9 @@ internal class Program
         )
         {
             string username = PadUsername(submissionData.Submission.Username);
-            double highestSimilarity = submissionData.HighestSimilarity;
+            double compressionRatio = submissionData.CompressionRatio;
             Console.WriteLine(
-                $"  {username} : {highestSimilarity.ToString("F4")}"
+                $"  {username} : {compressionRatio.ToString("F4")}"
             );
         }
         Console.WriteLine();
