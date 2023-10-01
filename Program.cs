@@ -209,11 +209,11 @@ internal class Program
 
                 if (lhsValue < rhsValue)
                 {
-                    return 1;
+                    return -1;
                 }
                 else if (rhsValue < lhsValue)
                 {
-                    return -1;
+                    return 1;
                 }
                 else
                 {
