@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.IO;
 
 namespace CheatingDetector;
 
@@ -34,7 +35,7 @@ public static class SubmissionFiles
                 string subdirname in Directory.GetDirectories(dirname).Order()
             )
             {
-                if (isTop && subdirname == ".git")
+                if (isTop && new DirectoryInfo(subdirname).Name == ".git")
                 {
                     continue;
                 }
