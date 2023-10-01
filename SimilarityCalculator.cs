@@ -5,7 +5,7 @@ namespace CheatingDetector;
 
 public class SimilarityCalculator
 {
-    private readonly ICompressor _compressor = new LZMACompressor();
+    private readonly ICompressor _compressor = new DeflateCompressor();
 
     public double CalculateSimilarity(string s1, string s2)
     {
