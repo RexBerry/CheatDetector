@@ -3,8 +3,8 @@
 internal class Program
 {
     public static int SizeThreshold => 250;
-    public static int SubmissionPairsToDisplay => 20;
-    public static int SubmissionsToDisplay => 5;
+    public static int SubmissionItemPairsToDisplay => 20;
+    public static int SubmissionItemsToDisplay => 5;
 
     private static void Main(string[] args)
     {
@@ -33,43 +33,41 @@ internal class Program
             SubmissionFiles.SourceFileExtensions.Add(fileExtension);
         }
 
-        List<SubmissionData> submissions = new();
-        List<SubmissionData> invalidSubmissions = new();
+        List<SubmissionItem> submissionItems = new();
+        List<SubmissionItem> invalidSubmissionItems = new();
         foreach (
-            Submission submission
-            in AssignmentSubmissions.GetSubmissions(assignmentDir)
+            SubmissionItem submissionItem
+            in AssignmentSubmissions.GetSubmissionItems(assignmentDir)
         )
         {
-            SubmissionData submissionData = new(submission);
-            if (submissionData.UncompressedSize < SizeThreshold)
+            if (submissionItem.UncompressedSize < SizeThreshold)
             {
-                invalidSubmissions.Add(submissionData);
+                invalidSubmissionItems.Add(submissionItem);
                 continue;
             }
 
-            submissions.Add(submissionData);
+            submissionItems.Add(submissionItem);
         }
 
-        // Don't feel good about this but whatever
-        Dictionary<string, int> usernameIndexes = new();
-        for (int i = 0; i < submissions.Count; ++i)
+        Dictionary<string, int> submissionItemNameIndexes = new();
+        for (int i = 0; i < submissionItems.Count; ++i)
         {
-            usernameIndexes[submissions[i].Submission.Username] = i;
+            submissionItemNameIndexes[submissionItems[i].Name] = i;
         }
 
         SimilarityCalculator similarityCalculator = new();
-        foreach (SubmissionData submissionData in submissions)
+        foreach (SubmissionItem submissionItem in submissionItems)
         {
-            submissionData.CompressedData
+            submissionItem.CompressedData
                 = similarityCalculator.CompressString(
-                    submissionData.Submission.MinifiedSourceCode
+                    submissionItem.Code
                 );
         }
 
         List<(int i, int j)> pairIndexes = new();
-        for (int i = 0; i < submissions.Count - 1; ++i)
+        for (int i = 0; i < submissionItems.Count - 1; ++i)
         {
-            for (int j = i + 1; j < submissions.Count; ++j)
+            for (int j = i + 1; j < submissionItems.Count; ++j)
             {
                 pairIndexes.Add((i, j));
             }
@@ -77,8 +75,8 @@ internal class Program
 
         int taskCount = Environment.ProcessorCount;
         Task[] tasks = new Task[taskCount];
-        List<SubmissionPair>[] taskResults
-            = new List<SubmissionPair>[taskCount];
+        List<SubmissionItemPair>[] taskResults
+            = new List<SubmissionItemPair>[taskCount];
 
         for (int i = 0; i < taskCount; ++i)
         {
@@ -90,13 +88,14 @@ internal class Program
 
         const int CHUNK_SIZE = 4;
         int chunkIdx = 0;
-        int itemsComplete = 0;
+        int pairsComplete = 0;
         for (int i = 0; i < taskCount; ++i)
         {
             int taskIdx = i;
             tasks[taskIdx] = new Task(()
-            => {
-                List<SubmissionPair> result = taskResults[taskIdx];
+            =>
+            {
+                List<SubmissionItemPair> result = taskResults[taskIdx];
                 SimilarityCalculator similarityCalculator = new();
                 while (true)
                 {
@@ -108,13 +107,14 @@ internal class Program
                         break;
                     }
 
-                    if (itemsComplete % (taskCount * CHUNK_SIZE) == 0)
+                    if (pairsComplete % (taskCount * CHUNK_SIZE) == 0)
                     {
                         double pctComplete
-                            = (double)itemsComplete / pairIndexes.Count * 100.0;
+                            = (double)pairsComplete / pairIndexes.Count
+                            * 100.0;
                         Console.Write(
                             CLEAR_LINE
-                            + $"Checked {itemsComplete}/{pairIndexes.Count}"
+                            + $"Checked {pairsComplete}/{pairIndexes.Count}"
                             + $" Submission Pairs"
                             + $" ({pctComplete.ToString("F1")}%)"
                         );
@@ -126,26 +126,28 @@ internal class Program
                     for (int i = begin; i < end; ++i)
                     {
                         (int i, int j) pair = pairIndexes[i];
-                        SubmissionData submissionData1 = submissions[pair.i];
-                        SubmissionData submissionData2 = submissions[pair.j];
+                        SubmissionItem submissionItem1
+                            = submissionItems[pair.i];
+                        SubmissionItem submissionItem2
+                            = submissionItems[pair.j];
                         double similarity
                             = similarityCalculator.CalculateSimilarity(
-                                submissionData1.Submission.MinifiedSourceCode,
-                                submissionData2.Submission.MinifiedSourceCode,
-                                submissionData1.CompressedSize,
-                                submissionData2.CompressedSize
+                                submissionItem1.Code,
+                                submissionItem2.Code,
+                                submissionItem1.CompressedSize,
+                                submissionItem2.CompressedSize
                             );
 
                         result.Add(
                             new(
-                                submissionData1.Submission.Username,
-                                submissionData2.Submission.Username,
+                                submissionItem1.Name,
+                                submissionItem2.Name,
                                 similarity
                             )
                         );
                     }
 
-                    Interlocked.Add(ref itemsComplete, end - begin);
+                    Interlocked.Add(ref pairsComplete, end - begin);
                 }
             });
             tasks[taskIdx].Start();
@@ -159,25 +161,28 @@ internal class Program
         Console.Write(CLEAR_LINE);
         Console.Out.Flush();
 
-        List<SubmissionPair> submissionPairs = new();
-        foreach (List<SubmissionPair> taskResult in taskResults)
+        List<SubmissionItemPair> submissionItemPairs = new();
+        foreach (List<SubmissionItemPair> taskResult in taskResults)
         {
-            submissionPairs.AddRange(taskResult);
+            submissionItemPairs.AddRange(taskResult);
         }
 
-        foreach (SubmissionPair submissionPair in submissionPairs)
+        foreach (SubmissionItemPair submissionItemPair in submissionItemPairs)
         {
-            double similarity = submissionPair.Similarity;
-            submissions[usernameIndexes[submissionPair.Username1]]
-                .AddSimilarityScore(similarity);
-            submissions[usernameIndexes[submissionPair.Username2]]
-                .AddSimilarityScore(similarity);
+            double similarity = submissionItemPair.Similarity;
+            submissionItems[
+                submissionItemNameIndexes[submissionItemPair.ItemName1]
+            ].AddSimilarityScore(similarity);
+            submissionItems[
+                submissionItemNameIndexes[submissionItemPair.ItemName2]
+            ].AddSimilarityScore(similarity);
         }
 
         // Reverse sort by similarity
-        submissionPairs.Sort(
-            (SubmissionPair lhs, SubmissionPair rhs)
-            => {
+        submissionItemPairs.Sort(
+            (SubmissionItemPair lhs, SubmissionItemPair rhs)
+            =>
+            {
                 if (lhs.Similarity < rhs.Similarity)
                 {
                     return 1;
@@ -193,20 +198,21 @@ internal class Program
             }
         );
 
-        // Sort by compression ratio
-        submissions.Sort(
-            (SubmissionData lhs, SubmissionData rhs)
-            => {
+        // Reverse sort by compression ratio
+        submissionItems.Sort(
+            (SubmissionItem lhs, SubmissionItem rhs)
+            =>
+            {
                 var lhsValue = lhs.CompressionRatio;
                 var rhsValue = rhs.CompressionRatio;
 
                 if (lhsValue < rhsValue)
                 {
-                    return -1;
+                    return 1;
                 }
                 else if (rhsValue < lhsValue)
                 {
-                    return 1;
+                    return -1;
                 }
                 else
                 {
@@ -218,26 +224,26 @@ internal class Program
         Console.WriteLine();
         PrintSummary(
             assignmentName,
-            submissions,
-            invalidSubmissions,
-            submissionPairs
+            submissionItems,
+            invalidSubmissionItems,
+            submissionItemPairs
         );
 
-        SaveSubmissionData(
-            Path.Join(args[0], "submissions.csv"),
-            submissions,
-            invalidSubmissions
+        SaveSubmissionItemData(
+            Path.Join(args[0], "submission_items.csv"),
+            submissionItems,
+            invalidSubmissionItems
         );
-        SaveSubmissionPairData(
-            Path.Join(args[0], "submission_pairs.csv"),
-            submissionPairs
+        SaveSubmissionItemPairData(
+            Path.Join(args[0], "submission_item_pairs.csv"),
+            submissionItemPairs
         );
     }
 
-    private static void SaveSubmissionData(
+    private static void SaveSubmissionItemData(
         string filename,
-        IEnumerable<SubmissionData> submissions,
-        IEnumerable<SubmissionData> invalidSubmissions
+        IEnumerable<SubmissionItem> submissionItems,
+        IEnumerable<SubmissionItem> invalidSubmissionItems
     )
     {
         using StreamWriter writer = new(filename);
@@ -247,85 +253,93 @@ internal class Program
             + ",Pseudo-Minified Code Size,Compressed Size"
         );
 
-        foreach (SubmissionData submissionData in submissions)
+        foreach (SubmissionItem submissionItem in submissionItems)
         {
-            string username = submissionData.Submission.Username;
-            double highestSimilarity = submissionData.HighestSimilarity;
-            double compressionRatio = submissionData.CompressionRatio;
-            long minifiedSize = submissionData.UncompressedSize;
-            long compressedSize = submissionData.CompressedSize;
+            string itemName = submissionItem.Name;
+            double highestSimilarity = submissionItem.HighestSimilarity;
+            double compressionRatio = submissionItem.CompressionRatio;
+            long minifiedSize = submissionItem.UncompressedSize;
+            long compressedSize = submissionItem.CompressedSize;
             writer.WriteLine(
-                $"{username},{highestSimilarity},{compressionRatio}"
+                $"{itemName},{highestSimilarity},{compressionRatio}"
                 + $",{minifiedSize},{compressedSize}"
             );
         }
 
-        foreach (SubmissionData invalidSubmission in invalidSubmissions)
+        foreach (SubmissionItem submissionItem in invalidSubmissionItems)
         {
-            string username = invalidSubmission.Submission.Username;
+            string itemName = submissionItem.Name;
             writer.WriteLine(
-                $"{username},---,---,---,---"
+                $"{itemName},---,---,---,---"
             );
         }
     }
 
-    private static void SaveSubmissionPairData(
+    private static void SaveSubmissionItemPairData(
         string filename,
-        IEnumerable<SubmissionPair> submissionPairs
+        IEnumerable<SubmissionItemPair> submissionItemPairs
     )
     {
         using StreamWriter writer = new(filename);
 
         writer.WriteLine("Username 1,Username 2,Similarity");
 
-        foreach (SubmissionPair submissionPair in submissionPairs)
+        foreach (SubmissionItemPair submissionItemPair in submissionItemPairs)
         {
-            string username1 = submissionPair.Username1;
-            string username2 = submissionPair.Username2;
-            double similarity = submissionPair.Similarity;
-            writer.WriteLine($"{username1},{username2},{similarity}");
+            string itemName1 = submissionItemPair.ItemName1;
+            string itemName2 = submissionItemPair.ItemName2;
+            double similarity = submissionItemPair.Similarity;
+            writer.WriteLine($"{itemName1},{itemName2},{similarity}");
         }
     }
 
     private static void PrintSummary(
         string assignmentName,
-        IList<SubmissionData> submissions,
-        IList<SubmissionData> invalidSubmissions,
-        IList<SubmissionPair> submissionPairs
+        IList<SubmissionItem> submissionItems,
+        IList<SubmissionItem> invalidSubmissionItems,
+        IList<SubmissionItemPair> submissionItemPairs
     )
     {
         Console.WriteLine($"Summary for {assignmentName}");
         Console.WriteLine();
 
-        int totalSubmissionCount
-            = submissions.Count + invalidSubmissions.Count;
-        Console.WriteLine($"Total Submissions: {totalSubmissionCount}");
-        Console.WriteLine($"Submissions Checked: {submissions.Count}");
+        int totalSubmissionItemCount
+            = submissionItems.Count + invalidSubmissionItems.Count;
         Console.WriteLine(
-            $"Submissions Skipped: {invalidSubmissions.Count}"
+            $"Total Submission Items: {totalSubmissionItemCount}"
+        );
+        Console.WriteLine(
+            $"Submissions Items Checked: {submissionItems.Count}"
+        );
+        Console.WriteLine(
+            $"Submissions Items Skipped: {invalidSubmissionItems.Count}"
         );
 
-        if (invalidSubmissions.Count > 0)
+        // TODO: Update padding to work with strings other than usernames
+
+        if (invalidSubmissionItems.Count > 0)
         {
             Console.WriteLine(
-                "  The following submissions were too short to check"
+                "  The following submission items were too short to"
             );
-            Console.Write("  for similarity or were unable to be decoded:");
+            Console.Write(
+                "  check for similarity or were unable to be decoded:"
+            );
 
             int lineLength = 0;
-            foreach (SubmissionData submissionData in invalidSubmissions)
+            foreach (SubmissionItem submissionItem in invalidSubmissionItems)
             {
-                string username
-                    = PadUsername(submissionData.Submission.Username);
+                string itemName
+                    = PadUsername(submissionItem.Name);
 
                 if (lineLength == 0)
                 {
                     Console.WriteLine();
-                    Console.Write($"    {username}");
+                    Console.Write($"    {itemName}");
                 }
                 else
                 {
-                    Console.Write($" {username}");
+                    Console.Write($" {itemName}");
                 }
 
                 ++lineLength;
@@ -340,34 +354,34 @@ internal class Program
         Console.WriteLine();
 
         Console.WriteLine(
-            $"Submission Pairs by Highest Similarity"
+            $"Submission Item Pairs by Highest Similarity"
         );
         foreach (
-            SubmissionPair submissionPair
-            in submissionPairs.Take(SubmissionPairsToDisplay)
+            SubmissionItemPair submissionItemPair
+            in submissionItemPairs.Take(SubmissionItemPairsToDisplay)
         )
         {
-            string username1 = PadUsername(submissionPair.Username1);
-            string username2 = PadUsername(submissionPair.Username2);
-            double similarity = submissionPair.Similarity;
+            string itemName1 = PadUsername(submissionItemPair.ItemName1);
+            string itemName2 = PadUsername(submissionItemPair.ItemName2);
+            double similarity = submissionItemPair.Similarity;
             Console.WriteLine(
-                $"  ( {username1} {username2} ) : {similarity.ToString("F4")}"
+                $"  ( {itemName1} {itemName2} ) : {similarity.ToString("F4")}"
             );
         }
         Console.WriteLine();
 
         Console.WriteLine(
-            $"Submissions by Lowest Compression Ratio"
+            $"Submission Items by Highest Compression Ratio"
         );
         foreach (
-            SubmissionData submissionData
-            in submissions.Take(SubmissionsToDisplay)
+            SubmissionItem submissionItem
+            in submissionItems.Take(SubmissionItemsToDisplay)
         )
         {
-            string username = PadUsername(submissionData.Submission.Username);
-            double compressionRatio = submissionData.CompressionRatio;
+            string itemName = PadUsername(submissionItem.Name);
+            double compressionRatio = submissionItem.CompressionRatio;
             Console.WriteLine(
-                $"  {username} : {compressionRatio.ToString("F4")}"
+                $"  {itemName} : {compressionRatio.ToString("F4")}"
             );
         }
         Console.WriteLine();
@@ -377,6 +391,6 @@ internal class Program
         => username.PadLeft(6, ' ');
 }
 
-public record struct SubmissionPair(
-    string Username1, string Username2, double Similarity
+public record struct SubmissionItemPair(
+    string ItemName1, string ItemName2, double Similarity
 );

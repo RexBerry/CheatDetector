@@ -2,11 +2,11 @@ using System.Text;
 
 namespace CheatingDetector;
 
-public record struct Submission(string Username, string MinifiedSourceCode);
-
-public class SubmissionData
+public class SubmissionItem
 {
-    public Submission Submission { get; set; }
+    public string Name { get; init; }
+    public string AuthorName { get; init; }
+    public string Code { get; init; }
     public byte[] UncompressedData { get; init; }
     public byte[] CompressedData { get; set; } = new byte[]{};
     public long UncompressedSize => UncompressedData.Length;
@@ -15,12 +15,12 @@ public class SubmissionData
         => (double)UncompressedSize / CompressedSize;
     public double HighestSimilarity { get; private set; } = 0.0;
 
-    public SubmissionData(Submission submission)
+    public SubmissionItem(string name, string authorName, string code)
     {
-        Submission = submission;
-        UncompressedData = Encoding.UTF8.GetBytes(
-            Submission.MinifiedSourceCode
-        );
+        Name = name;
+        AuthorName = authorName;
+        Code = code;
+        UncompressedData = Encoding.UTF8.GetBytes(code);
     }
 
     public void AddSimilarityScore(double similarityScore)

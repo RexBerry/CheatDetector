@@ -4,7 +4,9 @@ namespace CheatingDetector;
 
 public static class AssignmentSubmissions
 {
-    public static IEnumerable<Submission> GetSubmissions(string directoryName)
+    public static IEnumerable<SubmissionItem> GetSubmissionItems(
+        string directoryName
+    )
     {
         CppMinifier minifier = new();
 
@@ -39,8 +41,8 @@ public static class AssignmentSubmissions
                 minifiedSourceCode.Append('\n');
             }
 
-            yield return new Submission(
-                username, minifiedSourceCode.ToString()
+            yield return new SubmissionItem(
+                username, username, minifiedSourceCode.ToString()
             );
         }
     }
