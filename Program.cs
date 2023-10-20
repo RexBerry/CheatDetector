@@ -2,9 +2,9 @@
 
 internal class Program
 {
-    public const int SIZE_THRESHOLD = 250;
-    public const int SUBMISSION_PAIRS_TO_DISPLAY = 20;
-    public const int SUBMISSIONS_TO_DISPLAY = 5;
+    public static int SizeThreshold => 250;
+    public static int SubmissionPairsToDisplay => 20;
+    public static int SubmissionsToDisplay => 5;
 
     private static void Main(string[] args)
     {
@@ -41,7 +41,7 @@ internal class Program
         )
         {
             SubmissionData submissionData = new(submission);
-            if (submissionData.UncompressedSize < SIZE_THRESHOLD)
+            if (submissionData.UncompressedSize < SizeThreshold)
             {
                 invalidSubmissions.Add(submissionData);
                 continue;
@@ -344,7 +344,7 @@ internal class Program
         );
         foreach (
             SubmissionPair submissionPair
-            in submissionPairs.Take(SUBMISSION_PAIRS_TO_DISPLAY)
+            in submissionPairs.Take(SubmissionPairsToDisplay)
         )
         {
             string username1 = PadUsername(submissionPair.Username1);
@@ -361,7 +361,7 @@ internal class Program
         );
         foreach (
             SubmissionData submissionData
-            in submissions.Take(SUBMISSIONS_TO_DISPLAY)
+            in submissions.Take(SubmissionsToDisplay)
         )
         {
             string username = PadUsername(submissionData.Submission.Username);
