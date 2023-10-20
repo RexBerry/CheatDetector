@@ -11,8 +11,11 @@ public enum WhitespaceProcessingOptions
 public enum ContentProcessingOptions
 {
     KeepContent,
+    ObscureAlphanumeric,
     ObscureContent,
+    ObscureAndShortenAlphanumeric,
     ObscureAndShortenContent,
+    RemoveAlphanumeric,
     RemoveContent,
 }
 
@@ -34,13 +37,13 @@ public class CodeProcessor
     public string Process(
         string src,
         WhitespaceProcessingOptions whitespaceProcessing
-            = WhitespaceProcessingOptions.ReduceWhitespace,
+            = WhitespaceProcessingOptions.KeepWhitespace,
         ContentProcessingOptions contentProcessing
             = ContentProcessingOptions.KeepContent,
         StringLiteralProcessingOptions stringLiteralProcessing
-            = StringLiteralProcessingOptions.RemoveContent,
+            = StringLiteralProcessingOptions.KeepContent,
         CommentProcessingOptions commentProcessing
-            = CommentProcessingOptions.RemoveComments
+            = CommentProcessingOptions.KeepContent
     )
     {
         // TODO: Implement contentProcessing
@@ -67,13 +70,16 @@ public class CodeProcessor
 
         codepoints = GetCodepoints(code).ToList();
         sb = new();
+        bool previousWasContent = false;
         for (int i = 0; i < codepoints.Count;)
         {
             int codepoint = codepoints[i];
 
             if (removeWhitespace && IsWhitespace(codepoint))
             {
-                if (i == 0 || !IsIdentifierChar(codepoints[i - 1]))
+                previousWasContent = false;
+
+                if (i == 0 || !IsAlphanumericChar(codepoints[i - 1]))
                 {
                     ++i;
                     continue;
@@ -82,14 +88,14 @@ public class CodeProcessor
                 int j = i + 1;
                 while (j < codepoints.Count && IsWhitespace(codepoints[j]))
                 {
-                    j++;
+                    ++j;
                 }
 
                 if (
                     i > 0
                     && j < codepoints.Count
-                    && IsIdentifierChar(codepoints[i - 1])
-                    && IsIdentifierChar(codepoints[j])
+                    && IsAlphanumericChar(codepoints[i - 1])
+                    && IsAlphanumericChar(codepoints[j])
                 )
                 {
                     sb.Append(' ');
@@ -99,11 +105,26 @@ public class CodeProcessor
                 continue;
             }
 
-            if (IsQuote(codepoint))
+            if (
+                codepoint == '"'
+                || (
+                    codepoint == '\''
+                    && (
+                        i <= 0
+                        || !IsDigit(codepoints[i - 1])
+                        || codepoints.Count - i <= 1
+                        || !IsDigit(codepoints[i + 1])
+                    )
+                )
+            )
             {
+                previousWasContent = false;
+
                 sb.Append(char.ConvertFromUtf32(codepoint));
                 int beginQuote = codepoint;
-                bool isRawString = i > 0 && codepoints[i - 1] == 'R';
+                bool isCharLiteral = beginQuote == '\'';
+                bool isRawString
+                    = !isCharLiteral && i > 0 && codepoints[i - 1] == 'R';
                 ++i;
 
                 if (isRawString)
@@ -219,7 +240,7 @@ public class CodeProcessor
                             break;
                         }
 
-                        if (!removeStringContent)
+                        if (isCharLiteral || !removeStringContent)
                         {
                             sb.Append(char.ConvertFromUtf32(codepoint));
                         }
@@ -229,7 +250,7 @@ public class CodeProcessor
                         {
                             if (i < codepoints.Count)
                             {
-                                if (!removeStringContent)
+                                if (isCharLiteral || !removeStringContent)
                                 {
                                     sb.Append(
                                         char.ConvertFromUtf32(
@@ -252,6 +273,8 @@ public class CodeProcessor
                 && codepoints[i + 1] == '/'
             )
             {
+                previousWasContent = false;
+
                 if (!removeComments)
                 {
                     sb.Append("//");
@@ -290,6 +313,8 @@ public class CodeProcessor
                 && codepoints[i + 1] == '*'
             )
             {
+                previousWasContent = false;
+
                 if (!removeComments)
                 {
                     sb.Append("/*");
@@ -323,7 +348,56 @@ public class CodeProcessor
                 continue;
             }
 
-            sb.Append(char.ConvertFromUtf32(codepoint));
+            bool appendChar = true;
+            bool appendUnderscore = false;
+            switch (contentProcessing)
+            {
+            case ContentProcessingOptions.KeepContent:
+            default:
+                break;
+
+            case ContentProcessingOptions.ObscureAlphanumeric:
+                appendUnderscore = IsAlphanumericChar(codepoint);
+                break;
+
+            case ContentProcessingOptions.ObscureContent:
+                appendUnderscore = !IsWhitespace(codepoint);
+                break;
+
+            case ContentProcessingOptions.ObscureAndShortenAlphanumeric:
+                if (IsAlphanumericChar(codepoint))
+                {
+                    appendUnderscore = true;
+                    appendChar
+                        = i == 0 || !IsAlphanumericChar(codepoints[i - 1]);
+                }
+                break;
+
+            case ContentProcessingOptions.ObscureAndShortenContent:
+                if (!IsWhitespace(codepoint))
+                {
+                    appendUnderscore = true;
+                    appendChar = !previousWasContent;
+                }
+                break;
+
+            case ContentProcessingOptions.RemoveAlphanumeric:
+                appendChar = !IsAlphanumericChar(codepoint);
+                break;
+
+            case ContentProcessingOptions.RemoveContent:
+                appendChar = IsWhitespace(codepoint);
+                break;
+            }
+
+            if (appendChar)
+            {
+                sb.Append(
+                    appendUnderscore ? '_' : char.ConvertFromUtf32(codepoint)
+                );
+            }
+
+            previousWasContent = !IsWhitespace(codepoint);
             ++i;
         }
 
@@ -344,8 +418,10 @@ public class CodeProcessor
 
     // The following methods are probably not 100% correct
 
-    private bool IsIdentifierChar(int codepoint)
+    private bool IsAlphanumericChar(int codepoint)
     {
+        // Includes underscores as well
+
         string s = char.ConvertFromUtf32(codepoint);
         if (s.Length != 1)
         {
@@ -353,6 +429,17 @@ public class CodeProcessor
         }
 
         return s[0] == '_' || char.IsLetterOrDigit(s[0]);
+    }
+
+    private bool IsDigit(int codepoint)
+    {
+        string s = char.ConvertFromUtf32(codepoint);
+        if (s.Length != 1)
+        {
+            return false;
+        }
+
+        return char.IsAsciiDigit(s[0]);
     }
 
     private bool IsWhitespace(int codepoint)
@@ -364,16 +451,5 @@ public class CodeProcessor
         }
 
         return char.IsWhiteSpace(s[0]);
-    }
-
-    private bool IsQuote(int codepoint)
-    {
-        string s = char.ConvertFromUtf32(codepoint);
-        if (s.Length != 1)
-        {
-            return false;
-        }
-
-        return s[0] == '"';
     }
 }
