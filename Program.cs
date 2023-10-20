@@ -231,7 +231,7 @@ internal class Program
 
         SaveSubmissionItemData(
             Path.Join(args[0], "submission_items.csv"),
-            Path.Join(args[0], "processed_code.cpp"),
+            Path.Join(args[0], "processed_code.txt"),
             submissionItems,
             invalidSubmissionItems
         );
