@@ -9,10 +9,10 @@ public class SubmissionItem
     public string Code { get; init; }
     public byte[] UncompressedData { get; init; }
     public byte[] CompressedData { get; set; } = new byte[]{};
-    public long UncompressedSize => UncompressedData.Length;
+    public long RawSize => UncompressedData.Length;
     public long CompressedSize => CompressedData.Length;
     public double CompressionRatio
-        => (double)UncompressedSize / CompressedSize;
+        => (double)RawSize / CompressedSize;
     public double HighestSimilarity { get; private set; } = 0.0;
 
     public SubmissionItem(string name, string authorName, string code)

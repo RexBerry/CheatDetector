@@ -3,7 +3,7 @@ using System.Text;
 
 namespace CheatingDetector;
 
-public class SimilarityCalculator
+public class SimilarityCalculator : ISimilarityCalculator
 {
     private readonly ICompressor _compressor = new BrotliCompressor();
 

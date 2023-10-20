@@ -2,7 +2,7 @@ using System.Text;
 
 namespace CheatingDetector;
 
-public class LevenshteinDistance
+public class LevenshteinDistance : ISimilarityCalculator
 {
     public double CalculateSimilarity(string s1, string s2)
     {
@@ -15,6 +15,13 @@ public class LevenshteinDistance
             (double)CalculateEditDistance(s1, s2)
             / Math.Max(s1.Length, s2.Length)
         );
+    }
+
+    public double CalculateSimilarity(
+        string s1, string s2, long length1, long length2
+    )
+    {
+        return CalculateSimilarity(s1, s2);
     }
 
 
@@ -63,4 +70,6 @@ public class LevenshteinDistance
 
         return prevRow[^1];
     }
+
+    public byte[] CompressString(string s) => new byte[]{ };
 }

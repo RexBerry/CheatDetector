@@ -40,7 +40,7 @@ internal class Program
             in AssignmentSubmissions.GetSubmissionItems(assignmentDir)
         )
         {
-            if (submissionItem.UncompressedSize < SizeThreshold)
+            if (submissionItem.RawSize < SizeThreshold)
             {
                 invalidSubmissionItems.Add(submissionItem);
                 continue;
@@ -96,7 +96,8 @@ internal class Program
             =>
             {
                 List<SubmissionItemPair> result = taskResults[taskIdx];
-                SimilarityCalculator similarityCalculator = new();
+                ISimilarityCalculator similarityCalculator
+                    = new SimilarityCalculator();
                 while (true)
                 {
                     int begin
@@ -260,7 +261,7 @@ internal class Program
                 string itemName = submissionItem.Name;
                 double highestSimilarity = submissionItem.HighestSimilarity;
                 double compressionRatio = submissionItem.CompressionRatio;
-                long minifiedSize = submissionItem.UncompressedSize;
+                long minifiedSize = submissionItem.RawSize;
                 long compressedSize = submissionItem.CompressedSize;
                 writer.WriteLine(
                     $"{itemName},{highestSimilarity},{compressionRatio}"
