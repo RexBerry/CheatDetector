@@ -3,8 +3,8 @@
 internal class Program
 {
     public static int SizeThreshold => 250;
-    public static int SubmissionItemPairsToDisplay => 20;
-    public static int SubmissionItemsToDisplay => 5;
+    public static int SubmissionItemPairsToDisplay => 17;
+    public static int SubmissionItemsToDisplay => 8;
 
     private static void Main(string[] args)
     {
