@@ -231,6 +231,7 @@ internal class Program
 
         SaveSubmissionItemData(
             Path.Join(args[0], "submission_items.csv"),
+            Path.Join(args[0], "processed_code.cpp"),
             submissionItems,
             invalidSubmissionItems
         );
@@ -241,37 +242,70 @@ internal class Program
     }
 
     private static void SaveSubmissionItemData(
-        string filename,
+        string dataFilename,
+        string codeFilename,
         IEnumerable<SubmissionItem> submissionItems,
         IEnumerable<SubmissionItem> invalidSubmissionItems
     )
     {
-        using StreamWriter writer = new(filename);
-
-        writer.WriteLine(
+        using (StreamWriter writer = new(dataFilename))
+        {
+            writer.WriteLine(
             "Username,Highest Similarity,Compression Ratio"
             + ",Processed Code Size,Compressed Size"
-        );
-
-        foreach (SubmissionItem submissionItem in submissionItems)
-        {
-            string itemName = submissionItem.Name;
-            double highestSimilarity = submissionItem.HighestSimilarity;
-            double compressionRatio = submissionItem.CompressionRatio;
-            long minifiedSize = submissionItem.UncompressedSize;
-            long compressedSize = submissionItem.CompressedSize;
-            writer.WriteLine(
-                $"{itemName},{highestSimilarity},{compressionRatio}"
-                + $",{minifiedSize},{compressedSize}"
             );
+
+            foreach (SubmissionItem submissionItem in submissionItems)
+            {
+                string itemName = submissionItem.Name;
+                double highestSimilarity = submissionItem.HighestSimilarity;
+                double compressionRatio = submissionItem.CompressionRatio;
+                long minifiedSize = submissionItem.UncompressedSize;
+                long compressedSize = submissionItem.CompressedSize;
+                writer.WriteLine(
+                    $"{itemName},{highestSimilarity},{compressionRatio}"
+                    + $",{minifiedSize},{compressedSize}"
+                );
+            }
+
+            foreach (SubmissionItem submissionItem in invalidSubmissionItems)
+            {
+                string itemName = submissionItem.Name;
+                writer.WriteLine(
+                    $"{itemName},---,---,---,---"
+                );
+            }
         }
 
-        foreach (SubmissionItem submissionItem in invalidSubmissionItems)
+        using (StreamWriter writer = new(codeFilename))
         {
-            string itemName = submissionItem.Name;
-            writer.WriteLine(
-                $"{itemName},---,---,---,---"
-            );
+            const string SEPARATOR
+                = "/*--------------------------------------"
+                + "-------------------------------------*/";
+
+            writer.WriteLine("//");
+            writer.WriteLine("// Checked Submission Items");
+            writer.WriteLine("//");
+            writer.WriteLine();
+
+            foreach (SubmissionItem submissionItem in submissionItems)
+            {
+                writer.WriteLine(SEPARATOR);
+                writer.WriteLine($"// {submissionItem.Name}");
+                writer.WriteLine();
+                writer.Write(submissionItem.Code);
+                writer.WriteLine();
+            }
+
+            writer.WriteLine("//");
+            writer.WriteLine("// Skipped Submission Items");
+            writer.WriteLine("//");
+            writer.WriteLine();
+
+            foreach (SubmissionItem submissionItem in invalidSubmissionItems)
+            {
+                writer.WriteLine($"// {submissionItem.Name}");
+            }
         }
     }
 

@@ -9,7 +9,6 @@ public static class AssignmentSubmissions
     )
     {
         CodeProcessor processor = new();
-        using StreamWriter writer = new("processed_code.cpp");
 
         foreach (
             string submissionDirName
@@ -37,11 +36,6 @@ public static class AssignmentSubmissions
                     Console.WriteLine($"Warning: Unable to decode {filename}");
                     processed = string.Empty;
                 }
-
-                writer.WriteLine("/*--------------------------------------*/");
-                writer.WriteLine();
-                writer.Write(processed);
-                writer.WriteLine();
 
                 processedSourceCode.Append(processed);
                 processedSourceCode.Append('\n');

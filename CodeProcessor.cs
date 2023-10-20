@@ -374,6 +374,6 @@ public class CodeProcessor
             return false;
         }
 
-        return s[0] == '"' || s[0] == '\'';
+        return s[0] == '"';
     }
 }
