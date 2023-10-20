@@ -3,8 +3,8 @@
 internal class Program
 {
     public static int SizeThreshold => 250;
-    public static int SubmissionItemPairsToDisplay => 17;
-    public static int SubmissionItemsToDisplay => 8;
+    public static int SubmissionItemPairsToDisplay => 20;
+    public static int SubmissionItemsToDisplay => 10;
 
     private static void Main(string[] args)
     {
@@ -19,7 +19,7 @@ internal class Program
             );
             Console.WriteLine(
                 "- <file extensions>: a list of file extensions to analyze."
-                + " Example: .cpp .c .hpp .h"
+                + " Example: .cpp .cxx .cc .c .hpp .hxx .hh .h"
             );
 
             return;
@@ -250,7 +250,7 @@ internal class Program
 
         writer.WriteLine(
             "Username,Highest Similarity,Compression Ratio"
-            + ",Pseudo-Minified Code Size,Compressed Size"
+            + ",Processed Code Size,Compressed Size"
         );
 
         foreach (SubmissionItem submissionItem in submissionItems)

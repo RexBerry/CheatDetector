@@ -8,7 +8,8 @@ public static class AssignmentSubmissions
         string directoryName
     )
     {
-        CppMinifier minifier = new();
+        CodeProcessor processor = new();
+        using StreamWriter writer = new("processed_code.cpp");
 
         foreach (
             string submissionDirName
@@ -17,7 +18,7 @@ public static class AssignmentSubmissions
         {
             string username = new DirectoryInfo(submissionDirName).Name;
 
-            StringBuilder minifiedSourceCode = new();
+            StringBuilder processedSourceCode = new();
             foreach (
                 string filename
                 in SubmissionFiles.GetSourceFiles(submissionDirName)
@@ -25,24 +26,29 @@ public static class AssignmentSubmissions
             {
                 using StreamReader reader = new(filename, true);
                 string fileText = reader.ReadToEnd();
-                string minified;
+                string processed;
                 try
                 {
-                    minified = minifier.Minify(fileText);
+                    processed = processor.Process(fileText);
                 }
                 catch (ArgumentException)
                 {
                     // fileText doesn't contain valid Unicode
                     Console.WriteLine($"Warning: Unable to decode {filename}");
-                    minified = string.Empty;
+                    processed = string.Empty;
                 }
 
-                minifiedSourceCode.Append(minified);
-                minifiedSourceCode.Append('\n');
+                writer.WriteLine("/*--------------------------------------*/");
+                writer.WriteLine();
+                writer.Write(processed);
+                writer.WriteLine();
+
+                processedSourceCode.Append(processed);
+                processedSourceCode.Append('\n');
             }
 
             yield return new SubmissionItem(
-                username, username, minifiedSourceCode.ToString()
+                username, username, processedSourceCode.ToString()
             );
         }
     }
