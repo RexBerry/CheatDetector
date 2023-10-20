@@ -2,7 +2,7 @@
 
 internal class Program
 {
-    public static int SizeThreshold => 250;
+    public static int SizeThreshold => 125;
     public static int SubmissionItemPairsToDisplay => 20;
     public static int SubmissionItemsToDisplay => 10;
 
